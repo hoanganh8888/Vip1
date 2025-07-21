@@ -1,5 +1,5 @@
 local adminName = "👾Script By Gia Khiem Dz👾"
-local tweenSpeed = 750
+local tweenSpeed = 600
 local delayBetweenChests = 0.1
 local chestTouchDelay = 0,1
 
