@@ -1,6 +1,6 @@
 local adminName = "👾Script By Gia Khiem Dz👾"
 local tweenSpeed = 750
-local delayBetweenChests = 2
+local delayBetweenChests = 0.1
 local chestTouchDelay = 0,1
 
 local Players = game:GetService("Players")
