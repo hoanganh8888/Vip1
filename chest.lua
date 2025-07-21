@@ -1,11 +1,12 @@
--- [Trà Luu] Auto Farm Rương | CFrame Teleport | Không delay Tween
+-- Blox Fruits | Auto Chest Farm | Full Anti-Kick + Anti-Ban v2
+-- By Trà Luu | Tele tức thời + ServerHop + AutoMarine
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TeleportService = game:GetService("TeleportService")
-local player = Players.LocalPlayer
+local plr = game.Players.LocalPlayer
+local rs = game:GetService("ReplicatedStorage")
+local ts = game:GetService("TeleportService")
+local http = game:GetService("HttpService")
 
--- UI Hiển thị "lab"
+-- UI
 local gui = Instance.new("ScreenGui", game.CoreGui)
 local label = Instance.new("TextLabel", gui)
 label.Text = "lab"
@@ -16,50 +17,70 @@ label.BackgroundTransparency = 1
 label.Font = Enum.Font.SourceSansBold
 label.TextScaled = true
 
--- Tự chọn phe Marines nếu chưa chọn
+-- Auto chọn team Marines
 pcall(function()
-	if not player.Team or player.Team.Name ~= "Marines" then
-		ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-	end
+    if not plr.Team or plr.Team.Name ~= "Marines" then
+        rs:WaitForChild("Remotes").CommF_:InvokeServer("SetTeam", "Marines")
+    end
 end)
 
--- Hàm lấy toàn bộ rương
-local function GetChests()
-	local chests = {}
-	for _, v in ipairs(workspace:GetDescendants()) do
-		if v:IsA("Model") and v:FindFirstChildWhichIsA("BasePart") and string.find(v.Name:lower(), "chest") then
-			table.insert(chests, v:FindFirstChildWhichIsA("BasePart"))
-		end
-	end
-	return chests
+-- Lấy danh sách server khác
+local function getServers()
+    local url = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+    local response = game:HttpGet(url)
+    local servers = http:JSONDecode(response)
+    local result = {}
+    for _, s in pairs(servers.data) do
+        if s.playing < s.maxPlayers and s.id ~= game.JobId then
+            table.insert(result, s.id)
+        end
+    end
+    return result
 end
 
--- Hàm dịch chuyển đến vị trí
-local function TeleportTo(part)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if root and part then
-		root.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-	end
+-- Đổi server
+local function hopServer()
+    local servers = getServers()
+    if #servers > 0 then
+        ts:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], plr)
+    else
+        ts:Teleport(game.PlaceId) -- fallback
+    end
 end
 
--- Tự động vào lại nếu bị đá
-local function Rejoin()
-	TeleportService:Teleport(game.PlaceId)
+-- Lấy danh sách rương toàn map
+local function getChests()
+    local list = {}
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Model") and v:FindFirstChildWhichIsA("BasePart") then
+            if v.Name:lower():find("chest") or v.Name:lower():find("ch") then
+                table.insert(list, v:FindFirstChildWhichIsA("BasePart"))
+            end
+        end
+    end
+    return list
 end
 
--- Vòng lặp farm
-while true do
-	pcall(function()
-		local chests = GetChests()
-		if #chests == 0 then
-			wait(2)
-			Rejoin()
-		else
-			for _, chest in ipairs(chests) do
-				TeleportTo(chest)
-				wait(0.5) -- Delay nhận tiền
-			end
-		end
-	end)
-	wait(0.25)
+-- Teleport tức thời
+local function teleport(part)
+    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if hrp and part then
+        hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+    end
+end
+
+-- Vòng lặp chính
+while task.wait(0.25) do
+    pcall(function()
+        local chests = getChests()
+        if #chests == 0 then
+            task.wait(1.5)
+            hopServer()
+        else
+            for _, chest in ipairs(chests) do
+                teleport(chest)
+                task.wait(0.85) -- delay nhận tiền
+            end
+        end
+    end)
 end
